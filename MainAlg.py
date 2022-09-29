@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib as plt
 import random
 import sklearn
-pip install scikit-bio
 from skbio import DistanceMatrix
 from skbio.stats.ordination import pcoa
+from skbio.diversity import beta_diversity
 
 class Tree_Node:
     def __init__(self, depth=0, left=None, right=None, split_att=None, split_val=None, size=0):
@@ -39,14 +39,22 @@ class Forest:
     output: an omriTree represented by it's root (treeNode type)
 '''
 def omri_tree(X, OTUs, e, l, psi, distance_matrix):
-    #np.random.seed(0)
+    np.random.seed(0)
     if e >= l or len(X) <= 1:
         return Tree_Node(depth=e, size=len(X))
+
     else:
         sampled_X = X.sample(n=psi, random_state=2)
         renormalized_X = relative_abundence(sampled_X)
-        distance_mat = distance_matrix(renormalized_X)
-        p = skbio.stats.ordination.pcoa(distance_mat)
+        ids = [OTUs[i] for i in sampled_X.index] #####??????????
+        distance_mat = beta_diversity(distance_matrix, renormalized_X, ids)
+
+        pc1 = pcoa(distance_mat).samples[['PC1']] ####????? extract 1st pcoa
+        t = np.random.choice(min(pc1), max(pc1) + 1)
+        left = sampled_X[sampled_X[:] < t]
+        right = sampled_X[sampled_X[:] > t]
+        return Tree_Node(depth=e+1, left=left, right=right, split_att=pc1, split_val=t, size=len(sampled_X[0]))
+
 
 def distance_matrix():
     return
@@ -72,4 +80,5 @@ metadata = pd.read_csv("C:\Maya\CS\AnomalyDetectionMicrobiome\Human_Microbiome_P
 data = pd.read_csv("C:\Maya\CS\AnomalyDetectionMicrobiome\Human_Microbiome_Project_1_6_2017_data.tab",sep='\t')
 X, OTUs = create_data(data)
 
-omri_tree(X, OTUs, 1, 3, 10, distance_matrix)
+print(omri_tree(X, OTUs, 1, 3, 10, "braycurtis").size)
+#omri_tree(X, OTUs, 1, 3, 10, "weighted_unifrac")
