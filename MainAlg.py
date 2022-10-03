@@ -1,13 +1,14 @@
 import math
 import numpy as np
 import pandas as pd
+from sklearn.decomposition import PCA
 import matplotlib as plt
 import random
 import sklearn
-from skbio import DistanceMatrix
-from skbio.stats.ordination import pcoa
-from skbio.diversity import beta_diversity
-import seaborn as sns
+#from skbio import DistanceMatrix ####relative abundance / bray curtis
+#from skbio.stats.ordination import pcoa #####pca
+#from skbio.diversity import beta_diversity
+#import seaborn as sns
 
 
 class Tree_Node:
@@ -47,14 +48,17 @@ def omri_tree(X, OTUs, e, l, psi, distance_matrix):
         return Tree_Node(depth=e, size=len(X), samples=X.columns)
 
     else:
+        print("hi")
         sampled_X = X.sample(n=psi, random_state=2)
-        sampled_X.head()
         renormalized_X = relative_abundence(sampled_X)
-        ids = [OTUs[i] for i in sampled_X.index] #####??????????
-        print(ids)
-        distance_mat = beta_diversity(distance_matrix, renormalized_X, ids)
+        #ids = [OTUs[i] for i in sampled_X.index] #####??????????
+        #print(ids)
+        distance_mat = renormalized_X
+        distance_mat.head()
+        #distance_mat = beta_diversity(distance_matrix, renormalized_X, ids)
 
-        pc1 = pcoa(distance_mat).samples[['PC1']] ####????? extract 1st pcoa
+        #pc1 = pcoa(distance_mat).samples[['PC1']] ####????? extract 1st pcoa
+        pc1 = PCA().fit(distance_mat).components_[0]
         t = np.random.choice(min(pc1), max(pc1) + 1)
         left = sampled_X[sampled_X[:] < t]
         right = sampled_X[sampled_X[:] > t]
@@ -108,6 +112,7 @@ def relative_abundence(data):
     final_data = data.copy()
     for colname in data.columns:
         final_data.loc[:, colname] = data[colname] / sum(data[colname])
+    final_data.head()
     return final_data
 
 metadata = pd.read_csv("C:\Maya\CS\AnomalyDetectionMicrobiome\Human_Microbiome_Project_1_6_2017_metadata.tab",sep='\t')
@@ -126,5 +131,5 @@ isolation_forest_auc_list = [[0.5783208020050125, 0.6294714057871953, 0.63026885
 all_body_sites = all_body_sites_except_of_feces(metadata)
 
 def graph_auc(isolation_forest_auc_list, all_body_sites):
-    sns.kdeplot(isolation_forest_auc_list)
-
+    return
+    #sns.boxplot(data=df, x="age", y="class", hue="alive")
